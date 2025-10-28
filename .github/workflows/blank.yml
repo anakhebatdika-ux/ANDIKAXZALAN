@@ -15,15 +15,15 @@ jobs:
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         Write-Host "RDP Enabled!"
 
-    - name: Install Tailscale
+    - name: Install and Connect Tailscale
       shell: pwsh
       run: |
         Write-Host "Downloading and installing Tailscale..."
         Invoke-WebRequest https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe -OutFile tailscale-setup.exe
         Start-Process .\tailscale-setup.exe -ArgumentList "/install /quiet" -Wait
         $env:Path += ";C:\Program Files\Tailscale"
-        & "C:\Program Files\Tailscale\tailscale.exe" up --authkey ${{ secrets.TAILSCALE_KEY }} --hostname "GitHubRDP"
-        Write-Host "Tailscale connected!"
+        & "C:\Program Files\Tailscale\tailscale.exe" up --authkey "${{ secrets.TAILSCALE_KEY }}" --hostname GitHubRDP --accept-routes --accept-dns=false
+        Write-Host "Tailscale connected successfully!"
 
     - name: Keep Alive
       shell: pwsh
