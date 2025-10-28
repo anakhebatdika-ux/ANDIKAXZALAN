@@ -1,0 +1,53 @@
+name: Windows 11 via Tailscale RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  tailscale_rdp:
+    runs-on: windows-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Enable RDP
+        shell: powershell
+        run: |
+          Write-Host "🪟 Enabling RDP access..."
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+          # Create local user for RDP
+          $user = "tailscale"
+          $pass = "Win11Tailscale@123"
+          net user $user $pass /add
+          net localgroup "Remote Desktop Users" $user /add
+          net localgroup Administrators $user /add
+
+          Write-Host "✅ User: $user"
+          Write-Host "🔑 Password: $pass"
+
+      - name: Install Tailscale
+        shell: powershell
+        env:
+          TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
+        run: |
+          Write-Host "⬇️ Installing Tailscale..."
+          Invoke-WebRequest https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe -OutFile tailscale.exe
+          Start-Process tailscale.exe -ArgumentList "/quiet" -Wait
+          Write-Host "✅ Installed Tailscale"
+
+          Write-Host "🔗 Logging in..."
+          & 'C:\Program Files\Tailscale\tailscale.exe' up --authkey $env:TAILSCALE_AUTH_KEY --hostname "windows11-rdp"
+
+          Write-Host "🌍 Connected to Tailscale network."
+          & 'C:\Program Files\Tailscale\tailscale.exe' ip -4
+
+      - name: Keep Alive
+        shell: powershell
+        run: |
+          Write-Host "💤 VM active for up to 3 hours. Connect via Tailscale on your PC/phone."
+          Write-Host "➡️ RDP to this device from your Tailscale app using:"
+          Write-Host "   Computer: windows11-rdp (or its Tailscale IP)"
+          Write-Host "   User: tailscale"
+          Write-Host "   Password: Win11Tailscale@123"
+          Start-Sleep -Seconds 10800
