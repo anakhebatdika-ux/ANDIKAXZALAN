@@ -18,12 +18,15 @@ jobs:
     - name: Install Tailscale
       shell: pwsh
       run: |
-        Invoke-WebRequest https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe -OutFile tailscale.exe
-        Start-Process tailscale.exe -ArgumentList "/quiet" -Wait
-        tailscale up --authkey ${{ secrets.TAILSCALE_KEY }} --hostname "GitHubRDP"
+        Write-Host "Downloading and installing Tailscale..."
+        Invoke-WebRequest https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe -OutFile tailscale-setup.exe
+        Start-Process .\tailscale-setup.exe -ArgumentList "/install /quiet" -Wait
+        $env:Path += ";C:\Program Files\Tailscale"
+        & "C:\Program Files\Tailscale\tailscale.exe" up --authkey ${{ secrets.TAILSCALE_KEY }} --hostname "GitHubRDP"
+        Write-Host "Tailscale connected!"
 
     - name: Keep Alive
       shell: pwsh
       run: |
-        Write-Host "RDP + Tailscale active. Preventing timeout..."
+        Write-Host "RDP + Tailscale active. Keeping session alive..."
         while ($true) { Start-Sleep -Seconds 300 }
